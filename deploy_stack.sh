@@ -1,3 +1,3 @@
 #!/bin/bash
-setenv.sh
+. setenv.sh
 docker stack deploy -c docker-compose.yml gitlab-ci
