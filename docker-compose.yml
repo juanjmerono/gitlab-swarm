@@ -1,0 +1,46 @@
+version: '3'
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    restart: always
+    hostname: '${GITLAB_HOSTNAME}'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '${GITLAB_URL}'
+        nginx['redirect_http_to_https'] = true
+        registry_external_url '${GITLAB_REGISTRY_URL}'
+        pages_external_url '${GITLAB_PAGES_URL}'
+        pages_nginx['redirect_http_to_https'] = true
+        # Add any other gitlab.rb configuration here, each on its own line
+    ports:
+      - '443:443'
+      - '80:80'
+      - '2222:22'
+      - '5000:5000'
+    volumes:
+      - 'config:/etc/gitlab'
+      - 'logs:/var/log/gitlab'
+      - 'data:/var/opt/gitlab'
+    networks:
+      - gitlab-network
+
+  runner:
+    image: 'gitlab/gitlab-runner:alpine'
+    volumes:
+      - 'config-runner:/etc/gitlab-runner'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    environment:
+      - DOCKER_NETWORK_MODE=gitlab-ci_gitlab-network
+    networks:
+      - gitlab-network
+    links:
+      - gitlab
+
+volumes:
+  config:
+  config-runner:
+  logs:
+  data:
+
+networks:
+  gitlab-network:
