@@ -1,0 +1,13 @@
+tunnels:
+  gitlab:
+    proto: http
+    addr: 80
+    inspect: false
+  registry:
+    proto: http
+    addr: 80
+    inspect: false
+  #pages:
+  #  proto: http
+  #  addr: 80
+  #  inspect: false

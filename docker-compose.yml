@@ -7,17 +7,22 @@ services:
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url '${GITLAB_URL}'
-        nginx['redirect_http_to_https']=true
         registry_external_url '${GITLAB_REGISTRY_URL}'
         pages_external_url '${GITLAB_PAGES_URL}'
-        pages_nginx['redirect_http_to_https']=true
+        nginx['listen_port']=80
+        nginx['listen_https']=false
+        nginx['proxy_set_headers']={"X-Forwarded-Proto"=>"https","X-Forwarded-Ssl"=>"on"}
+        gitlab_rails['initial_shared_runners_registration_token']="${GITLAB_RUNNER_TOKEN}"
         gitlab_rails['registry_enabled']=true
+        registry_nginx['listen_port']=80
+        registry_nginx['listen_https']=false
+        registry_nginx['proxy_set_headers']={"X-Forwarded-Proto"=>"https","X-Forwarded-Ssl"=>"on"}
+        pages_nginx['listen_port']=80
+        pages_nginx['listen_https']=false
+        pages_nginx['proxy_set_headers']={"X-Forwarded-Proto"=>"https","X-Forwarded-Ssl"=>"on"}
         # Add any other gitlab.rb configuration here, each on its own line
     ports:
-      - '443:443'
       - '80:80'
-      - '2222:22'
-      - '5000:4567'
     volumes:
       - 'gitlab-config:/etc/gitlab'
       - 'gitlab-logs:/var/log/gitlab'
@@ -34,13 +39,19 @@ services:
       - 'gitlab-runner-config:/etc/gitlab-runner'
       - '/var/run/docker.sock:/var/run/docker.sock'
     environment:
-      - DOCKER_NETWORK_MODE=gitlab-ci_gitlab-network
+      - RUNNER_TAG_LIST=docker,runner
+      - REGISTER_RUN_UNTAGGED=true
+      - REGISTER_LOCKED=false
+      - CI_SERVER_URL=${GITLAB_URL}
+      - REGISTRATION_TOKEN=${GITLAB_RUNNER_TOKEN}
+      - RUNNER_OUTPUT_LIMIT=20480
+      - RUNNER_EXECUTOR=docker
+      #- DOCKER_NETWORK_MODE=gitlab-ci_gitlab-network
+      - DOCKER_VOLUMES=/var/run/docker.sock:/var/run/docker.sock
+      - DOCKER_PRIVILEGED=true
+      - DOCKER_IMAGE=alpine:latest
     networks:
       - gitlab-network
-    deploy:
-      mode: global
-      placement:
-        constraints: [node.role == worker]
 
 volumes:
   gitlab-config:
