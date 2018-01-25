@@ -1,0 +1,32 @@
+version: "3.4"
+
+services:
+  sentinel:
+    image: gitlabswarm_sentinel:latest
+    #build: .
+    command: ["redis-server", "/etc/redis/sentinel.conf", "--sentinel"]
+    networks:
+      - default
+    depends_on:
+      - redismaster
+    deploy:
+      replicas: 3
+      
+  redismaster:
+    image: "redis:4.0.6-alpine"
+    command: ["redis-server", "--requirepass", "redispwd", "--masterauth", "redispwd"]
+    #command: ["redis-server"]
+    networks:
+      - default
+
+  redisslave:
+    image: "redis:4.0.6-alpine"
+    command: ["redis-server", "--slaveof", "redismaster" , "6379", "--requirepass", "redispwd" , "--masterauth", "redispwd"]
+    #command: ["redis-server", "--slaveof", "redismaster" , "6379"]
+    networks:
+      - default
+    depends_on:
+      - redismaster
+    deploy:
+      replicas: 2
+

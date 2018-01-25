@@ -35,8 +35,16 @@ gitlab_rails['db_password'] = "gitlab"
 
 # Redis settings
 # redis service will be named "redis" in the stack
-gitlab_rails['redis_host'] = "redis"
-gitlab_rails['redis_password'] = "redispwd"
+#gitlab_rails['redis_host'] = "master"
+#gitlab_rails['redis_password'] = "redispwd"
+redis['master_name'] = 'gitlab-redis'
+redis['master_password'] = 'redispwd'
+
+gitlab_rails['redis_sentinels'] = [
+  {'host' => 'sentinel', 'port' => 26379},
+  {'host' => 'sentinel', 'port' => 26379},
+  {'host' => 'sentinel', 'port' => 26379}
+]
 
 # Prometheus exporters
 node_exporter['listen_address'] = '0.0.0.0:9100'

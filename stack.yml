@@ -21,6 +21,9 @@ services:
         traefik.port: 80
         traefik.frontend.rule: "Host:gitlab.localtest.me"
         traefik.docker.network: "proxy"
+    depends_on:
+      - redismaster
+      - postgres
 
   runner:
     image: 'gitlab/gitlab-runner:alpine'
@@ -41,10 +44,37 @@ services:
       - DOCKER_IMAGE=alpine:latest
     networks:
       - default
+    depends_on:
+      - gitlab
 
-  redis:
+  sentinel:
+    image: gitlabswarm_sentinel:latest
+    #build: .
+    command: ["redis-server", "/etc/redis/sentinel.conf", "--sentinel"]
+    networks:
+      - default
+    depends_on:
+      - redismaster
+    deploy:
+      replicas: 3
+      
+  redismaster:
     image: "redis:4.0.6-alpine"
-    command: ["redis-server", "--requirepass", "redispwd"]
+    command: ["redis-server", "--requirepass", "redispwd", "--masterauth", "redispwd"]
+    #command: ["redis-server"]
+    networks:
+      - default
+
+  redisslave:
+    image: "redis:4.0.6-alpine"
+    command: ["redis-server", "--slaveof", "redismaster" , "6379", "--requirepass", "redispwd" , "--masterauth", "redispwd"]
+    #command: ["redis-server", "--slaveof", "redismaster" , "6379"]
+    networks:
+      - default
+    depends_on:
+      - redismaster
+    deploy:
+      replicas: 2
 
   postgres:
     image: "postgres:10.1-alpine"
@@ -104,7 +134,6 @@ services:
         constraints: [node.role == manager]
   
 
-
 volumes:
   gitlab_data:
   gitlab_logs:
@@ -121,6 +150,6 @@ configs:
     file: "./prometheus.yaml"
   grafana.ini:
     file: "./grafana.ini"
-
+    
 networks:
   proxy:
